@@ -1,5 +1,8 @@
-# seneca-flow
-======================================================
+# Flow - a [Seneca](http://senecajs.org) plugin
+[![Travis][BadgeTravis]][Travis]
+
+- __Lead Maintainer:__ [Georgi Griffiths][Lead]
+- __Node:__ 4.x, 5.x
 
 > Why write code when you can write messages
 
@@ -104,7 +107,6 @@ Current Version: 0.0.1
 
 Tested on: Node 6.2.1
 
-[![Build Status](https://travis-ci.org/georgigriffiths/seneca-flow.png?branch=master)](https://travis-ci.org/georgigriffiths/seneca-flow)
 
 
 # Install
@@ -123,3 +125,13 @@ npm test
 ## Releases
 
    * 0.0.1: initial
+
+## License
+   Copyright (c) 2016 Georgi Griffiths;
+   Licensed under __[MIT][Lic]__.
+
+[Lead]: https://github.com/georgigriffiths
+[Coveralls]: https://coveralls.io/github/senecajs/seneca?branch=master
+[Lic]: ./LICENSE
+[Travis]: https://travis-ci.org/georgigriffiths/seneca-flow?branch=master
+[BadgeTravis]: https://travis-ci.org/georgigriffiths/seneca-flow.svg?branch=master
