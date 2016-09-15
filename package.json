@@ -1,0 +1,33 @@
+{
+  "name": "seneca-flow",
+  "version": "0.0.1",
+  "description": "Message flow",
+  "main": "flow.js",
+  "scripts": {
+    "test": "lab test/*.test.js -r console -t 70 -I Reflect -v",
+    "build": "./build.sh"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/georgigriffiths/seneca-flow.git"
+  },
+  "keywords": [
+    "seneca",
+    "flow control"
+  ],
+  "author": "Georgi Griffiths (http://georgigriffiths.com/)",
+  "license": "MIT",
+  "dependencies": {
+    "lodash": "4.15.0",
+    "norma": "0.3.0",
+    "parambulator": "1.5.2",
+    "zig": "git://github.com/georgigriffiths/zig.git"
+  },
+  "devDependencies": {
+    "seneca":"3.0.x",
+    "code": "3.0.x",
+    "lab": "11.0.x",
+    "eslint-config-seneca": "3.x.x",
+    "eslint-plugin-standard": "2.x.x"
+  }
+}
