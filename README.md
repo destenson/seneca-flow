@@ -2,7 +2,7 @@
 [![Travis][BadgeTravis]][Travis]
 
 - __Lead Maintainer:__ [Georgi Griffiths][Lead]
-- __Node:__ 4.x, 5.x
+- __Node:__ 4.x, 6.x
 
 > Why write code when you can write messages
 
@@ -105,8 +105,7 @@ Properties:
 
 Current Version: 0.0.1
 
-Tested on: Node 6.2.1
-
+Tested on: Node 6.4
 
 
 # Install
