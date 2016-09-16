@@ -66,10 +66,12 @@ Properties:
 * with: (with or times required) array of objects to to iterator as "in" property
 * times: (with or times required) integer number of times to iterate
 * exit: (optional) string condition for exit. Run after each action and can use :
-  * '$' - 'in' will be set to the current 'with' data. 'index' current index
+  * '$.in' will be set to the current 'with' data.
+  * 'index' current index
   * 'out' which will contain the result of the action
 * series: (optional) boolean force run in series
-
+* data: (optional) object to be passed to each iteration for templating
+* extend: (optional) object to extend each action
 
 ### Parallel
 
@@ -98,8 +100,8 @@ This is a waterfall compatible function to transform action results via the out$
 
 Properties:
 * \_: (required) string lodash function to call
-* args: (required) arguments for function
-* in: (required) data to pass to first item
+* in: (required) data to pass to first argument
+* args: (optional) arguments for function
 * select: (optional) property to operate on
 
 
