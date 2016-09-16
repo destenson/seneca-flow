@@ -105,7 +105,7 @@ Properties:
 
 
 
-Current Version: 0.0.2
+Current Version: 1.0.0
 
 Tested on: Node 6.4
 
