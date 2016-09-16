@@ -178,28 +178,26 @@ var iterate = function iterate (msg, done) {
   }
 
   function run () {
-    if (items.length) {
-      var item = items.shift()
-      var slot = pos
-      pos++
-      var cmd = msg.with ? deepExtend({}, extend, { in: item }, iterator) : deepExtend({}, extend, iterator)
-      var $ = msg.with ? deepExtend({in: item, index: slot}, data) : deepExtend({index: slot}, data)
-      start()
-      .step(function pass_data_to_iterate_act () {
-        return $
-      })
-      .wait(cmd)
-      .end(function iterate_act_result (err, data) {
-        if (err) return done(err)
-        finished++
-        res[slot] = data
-        var out = data // eslint-disable-line
-        if (!exit ? false : eval(exit)) return finish() // eslint-disable-line
-        if (finished === total) return finish()
-        if (series) run()
-      })
-      if (!series) run()
-    }
+    var item = items.shift()
+    var slot = pos
+    pos++
+    var cmd = msg.with ? deepExtend({}, extend, { in: item }, iterator) : deepExtend({}, extend, iterator)
+    var $ = msg.with ? deepExtend({in: item, index: slot}, data) : deepExtend({index: slot}, data)
+    start()
+    .step(function pass_data_to_iterate_act () {
+      return $
+    })
+    .wait(cmd)
+    .end(function iterate_act_result (err, data) {
+      if (err) return done(err)
+      finished++
+      res[slot] = data
+      var out = data // eslint-disable-line
+      if (!exit ? false : eval(exit)) return finish() // eslint-disable-line
+      if (finished === total) return finish()
+      if (series) run()
+    })
+    if (!series && items.length) run()
   }
 }
 
