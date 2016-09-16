@@ -4,8 +4,8 @@
   "other": " ",
   "indent_level": 0,
   "indent_with_tabs": false,
-  "preserve_newlines": true,
+  "preserve_newlines": false,
   "max_preserve_newlines": 3,
   "jslint_happy": true,
-  "indent_handlebars": true
+  "indent_handlebars": false
 }

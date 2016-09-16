@@ -1,5 +1,6 @@
 # Flow - a [Seneca](http://senecajs.org) plugin
 [![Travis][BadgeTravis]][Travis]
+[![Coveralls][BadgeCoveralls]][Coveralls]
 
 - __Lead Maintainer:__ [Georgi Griffiths][Lead]
 - __Node:__ 4.x, 6.x
@@ -48,13 +49,14 @@ Input data is created and assigned to $ from $$'anyproperty' and data from the p
 
 Properties:
 * sequence: (required) array of actions
+  * exit$: (optional) string condition for exit on each action. Run after each action and can use :
+    * '$' which will be populated with results set via key$ and 'in' will be set to the previous action result
+    * 'out' which will contain the result of the action
 * merge: (optional) boolean Merge result data when set via key$ otherwise overwrite
 * data: (optional) object to be passed to each action for templating
 * extend: (optional) object to extend each action
 * in: (optional) set in data for start of sequence
-* exit: (optional) string condition for exit. Run after each action and can use :
-  * '$' which will be populated with results set via key$ and 'in' will be set to the previous action result
-  * 'out' which will contain the result of the action
+
 
 
 ### Iterate
@@ -83,10 +85,10 @@ Properties:
 * in: (optional) data to pass to first item
 
 
-### Each
+### Map
 
 Properties:
-* each: (required) object action to run for each
+* map: (required) object action to run for each
 * in: (required) array
 
 
@@ -103,7 +105,7 @@ Properties:
 
 
 
-Current Version: 0.0.1
+Current Version: 0.0.2
 
 Tested on: Node 6.4
 
@@ -123,14 +125,23 @@ npm test
 
 ## Releases
 
-   * 0.0.1: initial
+   * 0.0.1:
+    * initial
+   * 1.0.0:
+    * use seneca-parambulator
+    * rename each to map
+    * add coveralls
+    * update code style for linting
+
 
 ## License
    Copyright (c) 2016 Georgi Griffiths;
    Licensed under __[MIT][Lic]__.
 
 [Lead]: https://github.com/georgigriffiths
-[Coveralls]: https://coveralls.io/github/senecajs/seneca?branch=master
+
 [Lic]: ./LICENSE
 [Travis]: https://travis-ci.org/georgigriffiths/seneca-flow?branch=master
 [BadgeTravis]: https://travis-ci.org/georgigriffiths/seneca-flow.svg?branch=master
+[Coveralls]: https://coveralls.io/github/georgigriffiths/seneca-flow?branch=master
+[BadgeCoveralls]: https://coveralls.io/repos/georgigriffiths/seneca-flow/badge.svg?branch=master&service=github
