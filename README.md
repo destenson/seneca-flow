@@ -1,4 +1,6 @@
 # Flow - a [Seneca](http://senecajs.org) plugin
+
+[![Join the chat at https://gitter.im/seneca-flow/Lobby](https://badges.gitter.im/seneca-flow/Lobby.svg)](https://gitter.im/seneca-flow/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Travis][BadgeTravis]][Travis]
 [![Coveralls][BadgeCoveralls]][Coveralls]
 
