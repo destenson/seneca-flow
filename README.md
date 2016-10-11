@@ -3,6 +3,7 @@
 [![Join the chat at https://gitter.im/seneca-flow/Lobby](https://badges.gitter.im/seneca-flow/Lobby.svg)](https://gitter.im/seneca-flow/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Travis][BadgeTravis]][Travis]
 [![Coveralls][BadgeCoveralls]][Coveralls]
+[![npm version](https://badge.fury.io/js/seneca-flow.svg)](https://badge.fury.io/js/seneca-flow)
 
 - __Lead Maintainer:__ [Georgi Griffiths][Lead]
 - __Node:__ 4.x, 6.x
@@ -105,13 +106,6 @@ Properties:
 * in: (required) data to pass to first argument
 * args: (optional) arguments for function
 * select: (optional) property to operate on
-
-
-
-
-Current Version: 1.0.0
-
-Tested on: Node 6.4
 
 
 # Install
