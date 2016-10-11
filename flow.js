@@ -34,7 +34,7 @@ function preload (plugin) {
   this.decorate('flow', start)
   this.decorate('flow_act', flow_act)
   this.decorate('parallel', parallel)
-  this.decorate('sequence:', sequence)
+  this.decorate('sequence', sequence)
   this.decorate('iterate', iterate)
   this.decorate('waterfall', waterfall)
   this.decorate('map', map)
