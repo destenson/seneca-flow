@@ -127,13 +127,16 @@ npm test
 
 ## Releases
 
-   * 0.0.1:
+  * 0.0.1:
     * initial
-   * 1.0.0:
+  * 1.0.1:
     * use seneca-parambulator
     * rename each to map
     * add coveralls
     * update code style for linting
+  * 1.0.2
+    * update dependencies
+
 
 
 ## License

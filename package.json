@@ -1,6 +1,6 @@
 {
   "name": "seneca-flow",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Senca action flow control, templating and data transformation",
   "main": "flow.js",
   "scripts": {
@@ -18,19 +18,27 @@
   ],
   "author": "Georgi Griffiths (http://georgigriffiths.com/)",
   "license": "MIT",
+  "files": [
+    "LICENSE",
+    "README.md",
+    "flow.js"
+  ],
+  "engines": {
+    "node": ">=4.0.0"
+  },
   "dependencies": {
-    "lodash": "4.15.0",
+    "lodash": "4.16.4",
     "norma": "0.3.0",
     "parambulator": "1.5.2",
     "zig": "git://github.com/georgigriffiths/zig.git"
   },
   "devDependencies": {
-    "code": "3.0.x",
-    "coveralls": "^2.11.13",
+    "code": "4.0.x",
+    "coveralls": "^2.11.14",
     "eslint-config-seneca": "3.x.x",
-    "eslint-plugin-standard": "2.x.x",
-    "lab": "11.0.x",
-    "seneca": "3.0.x",
+    "eslint-plugin-standard": "^2.0.1",
+    "lab": "11.1.x",
+    "seneca": "3.2.x",
     "seneca-parambulator": "^0.3.0"
   }
 }
