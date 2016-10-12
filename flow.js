@@ -41,7 +41,7 @@ function preload (plugin) {
   this.decorate('lodash', lodash)
 }
 
-var flow_start = function flow_start (msg, done) {
+function flow_start (msg, done) {
   flow_act(msg.flow, done)
 }
 
@@ -58,19 +58,33 @@ function lodash (msg, done) {
   }
 }
 
-var map = function map (msg, done) {
+
+map.validate = {
+  required$: ['map', 'in'],
+  map: {
+    type$: 'object'
+  },
+  in: {
+    type$: 'array'
+  }
+}
+function map (msg, done) {
   iterate({
     iterate: msg.map,
     with: msg.in
   }, done)
 }
 
-map.validate = {
-  map: 'object$,required$',
-  in: 'array$,required$'
+parallel.validate = {
+  required$: ['parallel'],
+  parallel: {
+    type$: 'array'
+  },
+  merge: {
+    type$: 'boolean'
+  }
 }
-
-var parallel = function parallel (msg, done) {
+function parallel (msg, done) {
   var items = msg.parallel
   var merge = msg.merge
   var commands = start()
@@ -83,12 +97,22 @@ var parallel = function parallel (msg, done) {
   }).end(done)
 }
 
-parallel.validate = {
-  parallel: 'array$, required$',
-  merge: 'boolean$'
+sequence.validate = {
+  required$: ['sequence'],
+  sequence: {
+    type$: 'array'
+  },
+  extend: {
+    type$: 'object'
+  },
+  data: {
+    type$: 'object'
+  },
+  merge: {
+    type$: 'boolean'
+  }
 }
-
-var sequence = function sequence (msg, done) {
+function sequence (msg, done) {
   var items = msg.sequence
   var merge = msg.merge
   var extend = msg.extend || {}
@@ -142,10 +166,11 @@ var sequence = function sequence (msg, done) {
   run()
 }
 
-sequence.validate = {
-  required$: ['sequence'],
-  sequence: {
-    type$: 'array'
+iterate.validate = {
+  exactlyone$: ['times', 'with'],
+  required$: ['iterate'],
+  iterate: {
+    type$: 'object'
   },
   extend: {
     type$: 'object'
@@ -153,13 +178,20 @@ sequence.validate = {
   data: {
     type$: 'object'
   },
-  merge: {
+  series: {
     type$: 'boolean'
+  },
+  times: {
+    type$: 'integer'
+  },
+  with: {
+    type$: 'array'
+  },
+  exit: {
+    type$: 'string'
   }
 }
-
-
-var iterate = function iterate (msg, done) {
+function iterate (msg, done) {
   var res = []
   var pos = 0
   var iterator = msg.iterate
@@ -201,33 +233,13 @@ var iterate = function iterate (msg, done) {
   }
 }
 
-iterate.validate = {
-  exactlyone$: ['times', 'with'],
-  required$: ['iterate'],
-  iterate: {
-    type$: 'object'
-  },
-  extend: {
-    type$: 'object'
-  },
-  data: {
-    type$: 'object'
-  },
-  series: {
-    type$: 'boolean'
-  },
-  times: {
-    type$: 'integer'
-  },
-  with: {
+waterfall.validate = {
+  required$: ['waterfall'],
+  waterfall: {
     type$: 'array'
-  },
-  exit: {
-    type$: 'string'
   }
 }
-
-var waterfall = function waterfall (msg, done) {
+function waterfall (msg, done) {
   var items = msg.waterfall
 
   function run (err, result) {
@@ -240,12 +252,6 @@ var waterfall = function waterfall (msg, done) {
   run(null, msg.in)
 }
 
-waterfall.validate = {
-  required$: ['waterfall'],
-  waterfall: {
-    type$: 'array'
-  }
-}
 
 function flow_act (act, done) {
   start(done).wait(act).end(done)
@@ -270,7 +276,7 @@ function start () {
     }
     else {
       fn = function (data, done) {
-        var $ = data || {}
+        var $ = deepExtend({}, clean(actargs), data)
         if (!actargs.if$ ? false : !eval(actargs.if$)) return done() // eslint-disable-line
 
         start(options)

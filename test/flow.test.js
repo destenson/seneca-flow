@@ -112,6 +112,7 @@ describe('flow', function () {
         item_sum: 2,
         item_array: [1, 2, 3],
         all: {
+          cmd: 'echo',
           'item': {
             'x': 1,
             'y': 2,
