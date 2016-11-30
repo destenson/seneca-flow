@@ -1,6 +1,6 @@
 {
   "name": "seneca-flow",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Senca action flow control, templating and data transformation",
   "main": "flow.js",
   "scripts": {
@@ -28,10 +28,11 @@
     "node": ">=4.0.0"
   },
   "dependencies": {
+    "colors": "^1.1.2",
     "lodash": "4.16.4",
     "norma": "0.3.0",
-    "zig": "git://github.com/georgigriffiths/zig.git",
-    "seneca-parambulator": "^0.3.0"
+    "seneca-parambulator": "^0.3.0",
+    "zig": "git://github.com/georgigriffiths/zig.git"
   },
   "devDependencies": {
     "code": "4.0.x",

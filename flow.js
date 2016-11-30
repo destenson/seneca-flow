@@ -42,7 +42,8 @@ function preload (plugin) {
 }
 
 function flow_start (msg, done) {
-  flow_act(msg.flow, done)
+  msg.flow.parent$ = _.get(msg, 'meta$.id')
+  flow_act(_.cloneDeep(msg.flow), done)
 }
 
 function lodash (msg, done) {
@@ -69,7 +70,8 @@ map.validate = {
   }
 }
 function map (msg, done) {
-  iterate({
+  flow_act({
+    parent$: _.get(msg, 'meta$.id'),
     iterate: msg.map,
     with: msg.in
   }, done)
@@ -89,6 +91,7 @@ function parallel (msg, done) {
   var merge = msg.merge
   var commands = start()
   _.each(items, function (item) {
+    item.parent$ = _.get(msg, 'meta$.id')
     commands.run(item)
   })
   commands.wait(function (data, done) {
@@ -96,6 +99,7 @@ function parallel (msg, done) {
     done(null, data)
   }).end(done)
 }
+
 
 sequence.validate = {
   required$: ['sequence'],
@@ -110,59 +114,104 @@ sequence.validate = {
   },
   merge: {
     type$: 'boolean'
+  },
+  series: {
+    type$: 'boolean'
+  },
+  concurrency: {
+    type$: 'integer'
+  },
+  stream_selector: {
+    type$: 'string'
   }
 }
 function sequence (msg, done) {
   var items = msg.sequence
   var merge = msg.merge
   var extend = msg.extend || {}
+  var concurrency = msg.concurrency || 10
+  var series = _.isUndefined(msg.series) ? true : msg.series
+  var EventEmitter = require('events')
+  var stream = msg.stream
+  var stream_selector = msg.stream_selector
+  if (stream &&
+      !(stream instanceof EventEmitter &&
+      typeof stream.write === 'function' &&
+      typeof stream.end === 'function')
+    ) return done('NOT WRITEABLE STREAM')
+
   var $ = msg.data || {}
+  extend.parent$ = _.get(msg, 'meta$.id')
   if (msg.in) $.in = msg.in
+  var total = items.length
+  var finished = 0
+  var processing = 0
+  var started = 0
+  var stream_to_write = []
 
   function finish () {
+    if (stream) stream.end()
     delete $.in
     done(null, $)
   }
 
   function run () {
-    if (!items.length) {
-      finish()
-    }
-    else {
-      var item = deepExtend(items.shift(), extend)
-      start()
-      .step(function pass_data_to_sequence_act (data) {
-        return $
-      })
-      .wait(item)
-      .end(function sequence_act_result (err, data) {
-        if (err) return done(err)
-        data = data || null
-        if (item.key$) {
-          if (merge) {
-            if (_.isPlainObject(data) && _.isPlainObject($[item.key$])) {
-              $[item.key$] = deepExtend($[item.key$], data)
-            }
-            else if (_.isArray($[item.key$]) && _.isArray(data) && $[item.key$].length === data.length) {
-              _.each(data, function (it, i) {
-                $[item.key$][i] = deepExtend($[item.key$][i], it)
-              })
-            }
-            else {
-              $[item.key$] = data
-            }
+    if (processing > concurrency) return
+    if (finished === total) return finish()
+    if (!items.length) return
+    var item = deepExtend(items.shift(), extend)
+    var i = started
+    started++
+    processing++
+    if (!series) run()
+    start()
+    .step(function pass_data_to_sequence_act (data) {
+      return $
+    })
+    .wait(item)
+    .end(function sequence_act_result (err, data) {
+      processing--
+      finished++
+      if (err) return done(err)
+      if (stream) {
+        stream_to_write[i] = stream_selector ? _.get(data, stream_selector) : data
+        write_stream()
+      }
+      data = data || null
+      if (item.key$) {
+        if (merge) {
+          if (_.isPlainObject(data) && _.isPlainObject($[item.key$])) {
+            $[item.key$] = deepExtend($[item.key$], data)
+          }
+          else if (_.isArray($[item.key$]) && _.isArray(data) && $[item.key$].length === data.length) {
+            _.each(data, function (it, i) {
+              $[item.key$][i] = deepExtend($[item.key$][i], it)
+            })
           }
           else {
             $[item.key$] = data
           }
         }
-        var out = data // eslint-disable-line
-        if (!item.exit$ ? false : eval(item.exit$)) return finish()  // eslint-disable-line
-        $.in = data
-        run()
-      })
+        else {
+          $[item.key$] = data
+        }
+      }
+      var out = data // eslint-disable-line
+      if (!item.exit$ ? false : eval(item.exit$)) return finish()  // eslint-disable-line
+      $.in = data
+      run()
+    })
+  }
+
+  var stream_pos = 0
+  function write_stream () {
+    if (stream_to_write[stream_pos]) {
+      stream.write(stream_to_write[stream_pos])
+      stream_pos++
+      write_stream()
     }
   }
+
   run()
 }
 
@@ -202,6 +251,8 @@ function iterate (msg, done) {
   var data = msg.data || {}
   var total = data.count = items.length
   var finished = 0
+
+  extend.parent$ = _.get(msg, 'meta$.id')
   if (!total) return finish()
   run()
 
@@ -246,6 +297,7 @@ function waterfall (msg, done) {
     if (err) return done(err)
     if (!items.length) return done(null, result)
     var item = items.shift()
+    item.parent$ = _.get(msg, 'meta$.id')
     item.in = result
     flow_act(item, run)
   }
@@ -262,7 +314,7 @@ function start () {
   var errhandler = args.errhandler
   var options = deepExtend({}, main_options, args.options)
 
-  var sd = {}
+  var sd = seneca.delegate()
 
   function make_fn (self, origargs) {
     var args = Norma('actargs:o? fn:f? name:s?', origargs)
@@ -276,6 +328,7 @@ function start () {
     }
     else {
       fn = function (data, done) {
+        _.set(actargs, 'meta$.id', seneca.idgen() + '/' + seneca.idgen())
         var $ = deepExtend({}, clean(actargs), data)
         if (!actargs.if$ ? false : !eval(actargs.if$)) return done() // eslint-disable-line
 
@@ -452,6 +505,7 @@ function run_template (msg) {
 function exec_action (msg, done) {
   run_template(msg)
   if (_.startsWith(msg.key, msg.prefix) && _.isPlainObject(msg.value)) {
+    msg.value.parent$ = _.get(msg.source, 'parent$')
     flow_act(msg.value, function (err, result) {
       if (err) return done(err)
       _.unset(msg.source, msg.key)
@@ -492,7 +546,8 @@ function format_act_result (msg, done) {
   if (out) {
     waterfall({
       waterfall: out,
-      in: result
+      in: result,
+      meta$: {id: _.get(act, 'parent$')}
     }, done)
   }
   else if (act.hasOwnProperty('out$')) {
