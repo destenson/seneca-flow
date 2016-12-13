@@ -4,14 +4,50 @@
 var _ = require('lodash')
 var Norma = require('norma')
 var Zig = require('zig')
+var Fs = require('fs')
+var Lrucache = require('lru-cache')
+var BSON = require('bson')
+var bson = new BSON()
+var cache = Lrucache()
+var cache_name = process.cwd() + '/flow_cache.bson'
 var deepExtend, clean, seneca
 var main_options = {
+  cache: {
+    active: false,
+    persist: false
+  },
+  logger: false,
   timeout: false,
   trace: false
 }
 
+function dump_cache (msg) {
+  var dump = cache.dump()
+  if (main_options.cache.persist) {
+    Fs.writeFile(cache_name, bson.serialize(dump), () => {
+      process.exit(0)
+    })
+  }
+}
+
 function flow (options) {
   main_options = deepExtend(main_options, options)
+  if (main_options.cache.persist) {
+    try {
+      var cache_data = Fs.readFileSync(cache_name)
+      var data = bson.deserialize(cache_data, {
+        promoteBuffers: true,
+        promoteValues: true
+      })
+      cache.load(data)
+    }
+    catch (e) {
+      console.log('loadcache', e)
+    }
+    process.on('SIGINT', dump_cache)
+  }
+  if (main_options.logger) this.use(require('./flow_logger'))
+
   return {
     name: 'flow'
   }
@@ -19,9 +55,10 @@ function flow (options) {
 
 function preload (plugin) {
   seneca = this
+
+
   deepExtend = seneca.util.deepextend
   clean = seneca.util.clean
-
   this.use('seneca-parambulator')
       .add({ flow: '*' }, flow_start)
       .add({ parallel: '*' }, parallel)
@@ -39,6 +76,14 @@ function preload (plugin) {
   this.decorate('waterfall', waterfall)
   this.decorate('map', map)
   this.decorate('lodash', lodash)
+
+
+  return {
+    name: 'flow',
+    exportmap: {
+      cache: cache
+    }
+  }
 }
 
 function flow_start (msg, done) {
@@ -89,7 +134,7 @@ parallel.validate = {
 function parallel (msg, done) {
   var items = msg.parallel
   var merge = msg.merge
-  var commands = start()
+  var commands = start(done)
   _.each(items, function (item) {
     item.parent$ = _.get(msg, 'meta$.id')
     commands.run(item)
@@ -118,11 +163,11 @@ sequence.validate = {
   series: {
     type$: 'boolean'
   },
+  results: {
+    type$: 'boolean'
+  },
   concurrency: {
     type$: 'integer'
-  },
-  stream_selector: {
-    type$: 'string'
   }
 }
 function sequence (msg, done) {
@@ -131,26 +176,23 @@ function sequence (msg, done) {
   var extend = msg.extend || {}
   var concurrency = msg.concurrency || 10
   var series = _.isUndefined(msg.series) ? true : msg.series
-  var EventEmitter = require('events')
-  var stream = msg.stream
-  var stream_selector = msg.stream_selector
-  if (stream &&
-      !(stream instanceof EventEmitter &&
-      typeof stream.write === 'function' &&
-      typeof stream.end === 'function')
-    ) return done('NOT WRITEABLE STREAM')
-
+  var item_callback = msg.item_callback
+  if (item_callback && !_.isFunction(item_callback)) return done('item_callback should be a function')
   var $ = msg.data || {}
+  if (msg.results) $.results = []
   extend.parent$ = _.get(msg, 'meta$.id')
   if (msg.in) $.in = msg.in
   var total = items.length
   var finished = 0
   var processing = 0
   var started = 0
-  var stream_to_write = []
+  var errored = false
+  var ended = false
+
+  run()
 
   function finish () {
-    if (stream) stream.end()
+    ended = true
     delete $.in
     done(null, $)
   }
@@ -160,24 +202,34 @@ function sequence (msg, done) {
     if (finished === total) return finish()
     if (!items.length) return
     var item = deepExtend(items.shift(), extend)
-    var i = started
+    var index = started
     started++
     processing++
     if (!series) run()
-    start()
+    start(done)
     .step(function pass_data_to_sequence_act (data) {
       return $
     })
     .wait(item)
+    .if(!!item_callback)
+    .step(function pass_indexed_result (data) {
+      return { index: index, event: item, result: data }
+    })
+    .wait(item_callback)
+    .endif()
     .end(function sequence_act_result (err, data) {
+      if (data === false && !ended) {
+        return finish()
+      }
+      if (errored || ended) return
       processing--
       finished++
-      if (err) return done(err)
-      if (stream) {
-        stream_to_write[i] = stream_selector ? _.get(data, stream_selector) : data
-        write_stream()
+      if (err) {
+        errored = true
+        return done(err)
       }
       data = data || null
+      if (msg.results) $.results[index] = data
       if (item.key$) {
         if (merge) {
           if (_.isPlainObject(data) && _.isPlainObject($[item.key$])) {
@@ -202,17 +254,6 @@ function sequence (msg, done) {
       run()
     })
   }
-
-  var stream_pos = 0
-  function write_stream () {
-    if (stream_to_write[stream_pos]) {
-      stream.write(stream_to_write[stream_pos])
-      stream_pos++
-      write_stream()
-    }
-  }
-
-  run()
 }
 
 iterate.validate = {
@@ -238,10 +279,22 @@ iterate.validate = {
   },
   exit: {
     type$: 'string'
+  },
+  concurrency: {
+    type$: 'integer'
+  },
+  merge: {
+    type$: 'boolean'
+  },
+  merge_key: {
+    type$: 'string'
+  },
+  merge_select: {
+    type$: 'string'
   }
 }
 function iterate (msg, done) {
-  var res = []
+  var res = msg.merge ? _.cloneDeep(msg.with) : []
   var pos = 0
   var iterator = msg.iterate
   var series = msg.exit ? true : !!msg.series
@@ -251,9 +304,13 @@ function iterate (msg, done) {
   var data = msg.data || {}
   var total = data.count = items.length
   var finished = 0
+  var processing = 0
+  var concurrency = msg.concurrency || 10
+  var errored = false
 
   extend.parent$ = _.get(msg, 'meta$.id')
   if (!total) return finish()
+
   run()
 
   function finish () {
@@ -261,26 +318,44 @@ function iterate (msg, done) {
   }
 
   function run () {
+    if (processing > concurrency) return
+    if (finished === total) return finish()
+    if (!items.length) return
     var item = items.shift()
     var slot = pos
     pos++
+    processing++
+    if (!series) run()
     var cmd = msg.with ? deepExtend({}, extend, { in: item }, iterator) : deepExtend({}, extend, iterator)
     var $ = msg.with ? deepExtend({in: item, index: slot}, data) : deepExtend({index: slot}, data)
-    start()
+    start(done)
     .step(function pass_data_to_iterate_act () {
       return $
     })
     .wait(cmd)
     .end(function iterate_act_result (err, data) {
-      if (err) return done(err)
+      if (errored) return
+      processing--
       finished++
-      res[slot] = data
+      if (err) {
+        errored = true
+        return done(err)
+      }
+      if (msg.merge) {
+        if (msg.merge_key) {
+          res[slot][msg.merge_key] = msg.merge_select ? _.get(data, msg.merge_select) : data
+        }
+        else {
+          res[slot] = deepExtend(res[slot], data)
+        }
+      }
+      else {
+        res[slot] = data
+      }
       var out = data // eslint-disable-line
       if (!exit ? false : eval(exit)) return finish() // eslint-disable-line
-      if (finished === total) return finish()
-      if (series) run()
+      run()
     })
-    if (!series && items.length) run()
   }
 }
 
@@ -305,7 +380,11 @@ function waterfall (msg, done) {
 }
 
 
-function flow_act (act, done) {
+function flow_act (act, previous, done) {
+  if (done) act.parent$ = _.get(previous, 'meta$.id')
+  if (!done) {
+    done = previous
+  }
   start(done).wait(act).end(done)
 }
 
@@ -332,12 +411,11 @@ function start () {
         var $ = deepExtend({}, clean(actargs), data)
         if (!actargs.if$ ? false : !eval(actargs.if$)) return done() // eslint-disable-line
 
-        start(options)
+        start(done)
         .step(function pass_template_data () {
           return {
             source: actargs,
             $: $,
-            options: options,
             remove: true
           }
         })
@@ -345,8 +423,7 @@ function start () {
         .step(function pass_act_args (data) {
           return {
             source: actargs,
-            $: $,
-            options: options
+            $: $
           }
         })
         .wait(exec_actions)
@@ -417,7 +494,18 @@ function start () {
 function run_act (args, done) {
   var out // eslint-disable-line
   var wait = args.wait$ || 1000
-  start()
+  var data
+  var cache_key
+  if (main_options.cache.active) {
+    cache_key = JSON.stringify(clean(args))
+    if (args.cache$) {
+      data = cache.get(cache_key)
+    }
+    if (data) {
+      return done(null, data)
+    }
+  }
+  start(done)
   .wait(function seneca_act (data, done) {
     var act
     try {
@@ -457,7 +545,12 @@ function run_act (args, done) {
   .if(!!args.act_result$, 'act_result')
   .wait(flow_act)
   .endif('act_result')
-  .end(done)
+  .end((err, res) => {
+    if (!err && res && main_options.cache.active && args.cache$) {
+      cache.set(cache_key, res)
+    }
+    done(err, res)
+  })
 }
 
 function run_template (msg) {
@@ -524,7 +617,7 @@ function exec_actions (msg, done) {
   msg.target = msg.remove ? msg.$ : msg.source
   msg.prefix = msg.remove ? '$$' : '$'
   if (!_.isPlainObject(msg.source)) return done(null, msg)
-  var execActions = start()
+  var execActions = start(done)
   _.each(msg.source, function (v, k) {
     execActions.step(function () {
       return _.extend({}, msg, {

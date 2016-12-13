@@ -9,9 +9,15 @@ var it = lab.it
 var before = lab.before
 var expect = Code.expect
 var testopts = {
-  log: 'all',
+  log: 'silent',
   strict: {
     result: false
+  },
+  flow: {
+    cache: {
+      active: true,
+      persist: true
+    }
   }
 }
 describe('flow', function () {
@@ -799,35 +805,44 @@ describe('flow', function () {
       done()
     })
   })
-  it('sequence in parallel', function (done) {
-    var Stream = require('stream')
-    var ws = new Stream.Writable()
-    var res = []
-    ws._write = function (chunk, encoding, done) {
-      console.log(chunk, encoding)
-      res.push(chunk)
-      done()
-    }
-    var buffers = [new Buffer('test'), new Buffer('test2'), new Buffer('test3'), new Buffer('test4'), new Buffer('test5'), new Buffer('test6'), new Buffer('test7'), new Buffer('test8')]
+  it('sequence in parallel with callback', function (done) {
+    var result = 0
     var act = {
       series: false,
-      stream: ws,
-      stream_selector: 'x',
+      item_callback: function (msg, done) {
+        result++
+        done()
+      },
       concurrency: 2,
       sequence: [
-        { cmd: 'echodelayed', x: buffers[0] },
-        { cmd: 'echo', x: buffers[1] },
-        { cmd: 'echodelayed', x: buffers[2] },
-        { cmd: 'echo', x: buffers[3] },
-        { cmd: 'echodelayed', x: buffers[4] },
-        { cmd: 'echo', x: buffers[5] },
-        { cmd: 'echodelayed', x: buffers[6] },
-        { cmd: 'echo', x: buffers[7] }
+        { cmd: 'echodelayed', x: 1 },
+        { cmd: 'echo', x: 2 },
+        { cmd: 'echodelayed', x: 3 },
+        { cmd: 'echo', x: 4 },
+        { cmd: 'echodelayed', x: 5 },
+        { cmd: 'echo', x: 6 },
+        { cmd: 'echodelayed', x: 7 },
+        { cmd: 'echo', x: 8 }
       ]
     }
     si.flow_act(act, function (err, out) {
-      if (err) return done(err)
-      expect(res).to.equal(buffers)
+      if (err) done(err)
+      expect(result).to.equal(8)
+      done()
+    })
+  })
+
+  it('cache binary', function (done) {
+    var data = new Buffer('some binary data', 'binary')
+    var act = {
+      cache$: true,
+      cmd: 'echo',
+      binary: data
+    }
+    si.flow_act(act, function (err, out) {
+      if (err) done(err)
+      var cache = si.export('flow/cache').get(JSON.stringify(si.util.clean(act)))
+      expect(cache).to.shallow.equal(out)
       done()
     })
   })

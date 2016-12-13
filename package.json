@@ -28,8 +28,10 @@
     "node": ">=4.0.0"
   },
   "dependencies": {
+    "bson": "^1.0.1",
     "colors": "^1.1.2",
     "lodash": "4.16.4",
+    "lru-cache": "^4.0.2",
     "norma": "0.3.0",
     "seneca-parambulator": "^0.3.0",
     "zig": "git://github.com/georgigriffiths/zig.git"
