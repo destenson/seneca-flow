@@ -22,7 +22,8 @@
   "files": [
     "LICENSE",
     "README.md",
-    "flow.js"
+    "flow.js",
+    "flow_logger.js"
   ],
   "engines": {
     "node": ">=4.0.0"
