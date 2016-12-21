@@ -224,11 +224,16 @@ function sequence (msg, done) {
       if (errored || ended) return
       processing--
       finished++
+      if (err && item.catch && eval(item.catch)) {
+        $.in = {error: err}
+        return run()
+      }
       if (err) {
         errored = true
         return done(err)
       }
       data = data || null
+
       if (msg.results) $.results[index] = data
       if (item.key$) {
         if (merge) {
@@ -248,8 +253,10 @@ function sequence (msg, done) {
           $[item.key$] = data
         }
       }
+
       var out = data // eslint-disable-line
-      if (!item.exit$ ? false : eval(item.exit$)) return finish()  // eslint-disable-line
+      if (!item.exit$ ? false : eval(item.exit$)) return finish() // eslint-disable-line
+      if (!item.error$ ? false : eval(item.error$)) return done(item.error_message$)  // eslint-disable-line
       $.in = data
       run()
     })
@@ -307,13 +314,18 @@ function iterate (msg, done) {
   var processing = 0
   var concurrency = msg.concurrency || 10
   var errored = false
-
+  var until_success = msg.until_success
+  var complete = false
+  series = until_success === true ? true : series
   extend.parent$ = _.get(msg, 'meta$.id')
   if (!total) return finish()
-
+  var until
   run()
 
   function finish () {
+    complete = true
+    if (until_success && !until) return done(msg.until_success_error)
+    if (until) res = until
     done(null, res)
   }
 
@@ -334,9 +346,10 @@ function iterate (msg, done) {
     })
     .wait(cmd)
     .end(function iterate_act_result (err, data) {
-      if (errored) return
+      if (errored || complete) return
       processing--
       finished++
+      if (err && until_success) return run()
       if (err) {
         errored = true
         return done(err)
@@ -352,8 +365,13 @@ function iterate (msg, done) {
       else {
         res[slot] = data
       }
+      if (until_success) {
+        until = data
+        return finish()
+      }
       var out = data // eslint-disable-line
-      if (!exit ? false : eval(exit)) return finish() // eslint-disable-line
+      if (!exit ? false : eval(exit)) return finish()
+      // eslint-disable-line
       run()
     })
   }
