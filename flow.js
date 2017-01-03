@@ -235,7 +235,7 @@ function sequence (msg, done) {
       data = data || null
 
       if (msg.results) $.results[index] = data
-      if (item.key$) {
+      if (item.key$ && data) {
         if (merge) {
           if (_.isPlainObject(data) && _.isPlainObject($[item.key$])) {
             $[item.key$] = deepExtend($[item.key$], data)
@@ -338,7 +338,7 @@ function iterate (msg, done) {
     pos++
     processing++
     if (!series) run()
-    var cmd = msg.with ? deepExtend({}, extend, { in: item }, iterator) : deepExtend({}, extend, iterator)
+    var cmd = msg.with ? deepExtend({}, extend, iterator) : deepExtend({}, extend, iterator)
     var $ = msg.with ? deepExtend({in: item, index: slot}, data) : deepExtend({index: slot}, data)
     start(done)
     .step(function pass_data_to_iterate_act () {

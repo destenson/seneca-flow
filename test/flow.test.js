@@ -309,16 +309,15 @@ describe('flow', function () {
     }
     si.flow_act(act, function (err, out) {
       if (err) return done(err)
-      expect(out).to.equal([
-      { in: 0,
+      expect(out).to.equal([{
         returnindex: 0
-      }, { in: 1,
+      }, {
         returnindex: 1
-      }, { in: 2,
+      }, {
         returnindex: 2
-      }, { in: 3,
+      }, {
         returnindex: 3
-      }, { in: 4,
+      }, {
         returnindex: 4
       }])
       done()
@@ -356,7 +355,7 @@ describe('flow', function () {
       }, {
         get: 'xyz',
         if$: '$.pos3 != 3',
-        key$: 'pos3',
+        key$: 'pos4',
         out$: {
           _: 'get',
           args: 'z'
@@ -376,7 +375,7 @@ describe('flow', function () {
           'y': 2,
           'z': 3
         },
-        'pos3': null
+        'pos3': 3
       })
       done()
     })
@@ -529,8 +528,9 @@ describe('flow', function () {
         get: 'array'
       }, {
         $transformed: {
-          $in: '$.in',
+          $in: '$',
           map: {
+            $in: '$',
             _: 'padEnd',
             args: [3, '-'],
             select: 'item'
@@ -688,9 +688,7 @@ describe('flow', function () {
     }
     si.flow_act(act, function (err, out) {
       if (err) return done(err)
-      expect(out).to.equal({
-        'res': null
-      })
+      expect(out).to.equal({})
       done()
     })
   })
