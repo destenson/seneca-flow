@@ -1,6 +1,6 @@
 {
   "name": "seneca-flow",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Senca action flow control, templating and data transformation",
   "main": "flow.js",
   "scripts": {
