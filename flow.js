@@ -224,7 +224,7 @@ function sequence (msg, done) {
       if (errored || ended) return
       processing--
       finished++
-      if (err && item.catch && eval(item.catch)) {
+      if (err && item.catch && eval(item.catch)) { // eslint-disable-line
         $.in = {error: err}
         return run()
       }
@@ -370,7 +370,7 @@ function iterate (msg, done) {
         return finish()
       }
       var out = data // eslint-disable-line
-      if (!exit ? false : eval(exit)) return finish()
+      if (!exit ? false : eval(exit)) return finish() // eslint-disable-line
       // eslint-disable-line
       run()
     })
