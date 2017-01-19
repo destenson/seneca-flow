@@ -59,7 +59,7 @@ function preload (plugin) {
 
   deepExtend = seneca.util.deepextend
   clean = seneca.util.clean
-  this.use('seneca-parambulator')
+  this
       .add({ flow: '*' }, flow_start)
       .add({ parallel: '*' }, parallel)
       .add({ sequence: '*' }, sequence)
@@ -198,14 +198,13 @@ function sequence (msg, done) {
   }
 
   function run () {
-    if (processing > concurrency) return
+    if (processing >= concurrency) return
     if (finished === total) return finish()
     if (!items.length) return
     var item = deepExtend(items.shift(), extend)
     var index = started
     started++
     processing++
-    if (!series) run()
     start(done)
     .step(function pass_data_to_sequence_act (data) {
       return $
@@ -260,6 +259,7 @@ function sequence (msg, done) {
       $.in = data
       run()
     })
+    if (!series) run()
   }
 }
 
@@ -330,14 +330,13 @@ function iterate (msg, done) {
   }
 
   function run () {
-    if (processing > concurrency) return
+    if (processing >= concurrency) return
     if (finished === total) return finish()
     if (!items.length) return
     var item = items.shift()
     var slot = pos
     pos++
     processing++
-    if (!series) run()
     var cmd = msg.with ? deepExtend({}, extend, iterator) : deepExtend({}, extend, iterator)
     var $ = msg.with ? deepExtend({in: item, index: slot}, data) : deepExtend({index: slot}, data)
     start(done)
@@ -374,6 +373,7 @@ function iterate (msg, done) {
       // eslint-disable-line
       run()
     })
+    if (!series) run()
   }
 }
 

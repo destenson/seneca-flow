@@ -21,7 +21,10 @@ var testopts = {
   }
 }
 describe('flow', function () {
-  var si = Seneca(testopts).use(require('..')).add('cmd:echo', function (msg, done) {
+  var si = Seneca(testopts)
+  .use('seneca-parambulator')
+  .use(require('..'))
+  .add('cmd:echo', function (msg, done) {
     delete msg.cmd
     done(null, si.util.clean(msg))
   }).add('cmd:echodelayed', function (msg, done) {
@@ -811,7 +814,7 @@ describe('flow', function () {
         result++
         done()
       },
-      concurrency: 2,
+      concurrency: 8,
       sequence: [
         { cmd: 'echodelayed', x: 1 },
         { cmd: 'echo', x: 2 },
